@@ -1,7 +1,7 @@
 <template>
   <div class="flag-game">
     <div class="header">
-      <h1>🏁 Flag Game! 🏁</h1>
+      <h1>Bandiere!</h1>
       <div class="header-controls">
         <div class="score">Score: {{ score }}</div>
               <button 
@@ -34,7 +34,20 @@
       </div>
     </div>
 
-    <div class="game-container" v-if="!showCelebration && currentTarget">
+    <!-- Loading Next Question -->
+    <div v-if="isLoadingNext" class="loading-container">
+      <div class="loading-content">
+        <div class="loading-spinner">🌟</div>
+        <h2>Getting ready for the next flag...</h2>
+        <div class="loading-dots">
+          <span class="dot">•</span>
+          <span class="dot">•</span>
+          <span class="dot">•</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-container" v-if="!showCelebration && !isLoadingNext && currentTarget">
       <!-- Question -->
       <div class="question">
         <h2>Find the flag of:</h2>
@@ -141,8 +154,8 @@
     </div>
 
     <!-- Enhanced celebration animation with more visual rewards -->
-    <div v-if="showCelebration" class="celebration" @click="nextQuestion" @touchstart="nextQuestion">
-      <div class="celebration-content">
+    <div v-if="showCelebration" class="celebration" @click.stop="nextQuestion" @touchstart.stop="nextQuestion">
+      <div class="celebration-content" @click="nextQuestion" @touchstart="nextQuestion">
         <div class="trophy">🏆</div>
         <div class="rainbow-stars">
           <div class="star" v-for="n in 12" :key="n">⭐</div>
@@ -219,7 +232,8 @@ export default {
       showIOSTip: false,
       deferredPrompt: null,
       showInstallPrompt: false,
-      isStandalone: false
+      isStandalone: false,
+      isLoadingNext: false
     }
   },
   computed: {
@@ -511,11 +525,21 @@ export default {
     
     nextQuestion() {
       // Only proceed if we're actually showing the celebration
-      if (!this.showCelebration) return
+      if (!this.showCelebration || this.isLoadingNext) return
       
-      // Reset processing state
-      this.isProcessingAnswer = false
-      this.generateQuestion()
+      // Set loading state to prevent double-clicks
+      this.isLoadingNext = true
+      
+      // Hide celebration first
+      this.showCelebration = false
+      
+      // Add suspenseful delay before showing new question
+      setTimeout(() => {
+        // Reset processing state
+        this.isProcessingAnswer = false
+        this.isLoadingNext = false
+        this.generateQuestion()
+      }, 1000) // 1 second for suspense
     },
 
     toggleFullscreen() {
@@ -1474,6 +1498,69 @@ export default {
 @keyframes pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
+
+/* Loading State Styles */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.loading-content {
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 40px;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.loading-spinner {
+  font-size: 4rem;
+  animation: loadingSpin 1.5s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+.loading-content h2 {
+  font-size: 1.8rem;
+  margin: 20px 0;
+  color: #FFD700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.dot {
+  font-size: 2rem;
+  animation: loadingBounce 1.4s ease-in-out infinite both;
+}
+
+.dot:nth-child(1) { animation-delay: -0.32s; }
+.dot:nth-child(2) { animation-delay: -0.16s; }
+.dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes loadingSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes loadingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 
 @keyframes wiggle {
