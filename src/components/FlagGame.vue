@@ -20,6 +20,14 @@
       >
         📱
       </button>
+      <button 
+        v-if="showInstallPrompt" 
+        class="install-btn" 
+        @click="installPWA" 
+        title="Install App for Fullscreen"
+      >
+        📲
+      </button>
         <button class="settings-btn" @click="showSettings = true" title="Settings">
           ⚙️
         </button>
@@ -208,7 +216,10 @@ export default {
       celebrationSoundUrl: this.createSoundUrl(), // Victory fanfare
       isFullscreen: false,
       isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-      showIOSTip: false
+      showIOSTip: false,
+      deferredPrompt: null,
+      showInstallPrompt: false,
+      isStandalone: false
     }
   },
   computed: {
@@ -224,6 +235,10 @@ export default {
     document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange)
     document.addEventListener('mozfullscreenchange', this.handleFullscreenChange)
     document.addEventListener('msfullscreenchange', this.handleFullscreenChange)
+    
+    // PWA installation handling
+    this.checkIfStandalone()
+    this.setupPWAInstallPrompt()
   },
   beforeUnmount() {
     // Clean up fullscreen event listeners
@@ -551,6 +566,54 @@ export default {
 
     closeIOSTip() {
       this.showIOSTip = false
+    },
+
+    // PWA installation methods
+    checkIfStandalone() {
+      this.isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                          window.navigator.standalone ||
+                          document.referrer.includes('android-app://')
+    },
+
+    setupPWAInstallPrompt() {
+      // Listen for the beforeinstallprompt event
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault()
+        // Stash the event so it can be triggered later
+        this.deferredPrompt = e
+        // Show install button if not standalone and not iOS
+        if (!this.isStandalone && !this.isIOS) {
+          this.showInstallPrompt = true
+        }
+      })
+
+      // Listen for the app being installed
+      window.addEventListener('appinstalled', () => {
+        console.log('PWA was installed')
+        this.showInstallPrompt = false
+        this.deferredPrompt = null
+      })
+    },
+
+    async installPWA() {
+      if (!this.deferredPrompt) return
+
+      // Show the install prompt
+      this.deferredPrompt.prompt()
+
+      // Wait for the user to respond to the prompt
+      const { outcome } = await this.deferredPrompt.userChoice
+
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt')
+      } else {
+        console.log('User dismissed the install prompt')
+      }
+
+      // Clear the deferredPrompt
+      this.deferredPrompt = null
+      this.showInstallPrompt = false
     }
   }
 }
@@ -622,7 +685,8 @@ export default {
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-.settings-btn {
+.settings-btn,
+.install-btn {
   background: rgba(255,255,255,0.2);
   border: 2px solid rgba(255,255,255,0.3);
   border-radius: 50%;
@@ -636,10 +700,21 @@ export default {
   justify-content: center;
 }
 
-.settings-btn:hover {
+.settings-btn:hover,
+.install-btn:hover {
   background: rgba(255,255,255,0.3);
   transform: scale(1.1);
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.install-btn {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.install-btn:hover {
+  background: rgba(76, 175, 80, 0.5);
 }
 
 .ios-fullscreen {
