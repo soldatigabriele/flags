@@ -2,7 +2,12 @@
   <div class="flag-game">
     <div class="header">
       <h1>🏁 Flag Game! 🏁</h1>
-      <div class="score">Score: {{ score }}</div>
+      <div class="header-controls">
+        <div class="score">Score: {{ score }}</div>
+        <button class="settings-btn" @click="showSettings = true" title="Settings">
+          ⚙️
+        </button>
+      </div>
     </div>
 
     <div class="game-container" v-if="!showCelebration && currentTarget">
@@ -36,8 +41,57 @@
           Try again! 💪
         </div>
       </div>
+    </div>
 
-
+    <!-- Settings Modal -->
+    <div v-if="showSettings" class="settings-modal" @click.self="closeSettings">
+      <div class="settings-content">
+        <div class="settings-header">
+          <h2>⚙️ Game Settings</h2>
+          <button class="close-btn" @click="closeSettings">✕</button>
+        </div>
+        
+        <div class="settings-section">
+          <h3>🏁 Select Flags for the Game</h3>
+          <p class="settings-hint">Choose which flags you want to practice with:</p>
+          
+          <div class="flag-selection-controls">
+            <button class="select-all-btn" @click="selectAllFlags">Select All</button>
+            <button class="deselect-all-btn" @click="deselectAllFlags">Deselect All</button>
+            <button class="popular-flags-btn" @click="selectPopularFlags">Popular Flags</button>
+          </div>
+          
+          <div class="selected-count">
+            {{ selectedFlagsCount }} of {{ allFlags.length }} flags selected
+          </div>
+          
+          <div class="flags-grid">
+            <div 
+              v-for="flag in allFlags" 
+              :key="flag.name"
+              class="flag-checkbox"
+              :class="{ 'selected': selectedFlags.includes(flag.name) }"
+              @click="toggleFlag(flag.name)"
+            >
+              <input 
+                type="checkbox" 
+                :id="flag.name"
+                :checked="selectedFlags.includes(flag.name)"
+                @change="toggleFlag(flag.name)"
+              >
+              <label :for="flag.name">
+                <span class="flag-emoji-small">{{ flag.emoji }}</span>
+                <span class="flag-name-small">{{ flag.name }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="settings-actions">
+          <button class="save-btn" @click="saveSettings">💾 Save Settings</button>
+          <button class="cancel-btn" @click="closeSettings">❌ Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- Enhanced celebration animation with more visual rewards -->
@@ -93,7 +147,8 @@ export default {
   name: 'FlagGame',
   data() {
     return {
-      flags: FLAGS_CONFIG,
+      allFlags: FLAGS_CONFIG,
+      flags: [], // Will be populated from selected flags
       currentTarget: null,
       currentOptions: [],
       correctIndex: 0,
@@ -107,16 +162,105 @@ export default {
       showHearts: false,
       celebrationAnimals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸'],
       isProcessingAnswer: false,
+      showSettings: false,
+      selectedFlags: [], // Array of flag names that are selected
       // Simple sound URLs using Web Audio API tones
       correctSoundUrl: this.createSoundUrl(), // C, E, G chord
       wrongSoundUrl: this.createSoundUrl(), // Low descending tones
       celebrationSoundUrl: this.createSoundUrl() // Victory fanfare
     }
   },
+  computed: {
+    selectedFlagsCount() {
+      return this.selectedFlags.length
+    }
+  },
   mounted() {
+    this.loadSettings()
     this.generateQuestion()
   },
   methods: {
+    // Load settings from localStorage
+    loadSettings() {
+      try {
+        const savedFlags = localStorage.getItem('flagGame_selectedFlags')
+        if (savedFlags) {
+          this.selectedFlags = JSON.parse(savedFlags)
+        } else {
+          // Default to all flags if no settings saved
+          this.selectedFlags = this.allFlags.map(flag => flag.name)
+        }
+        this.updateFlagsFromSelection()
+      } catch (error) {
+        console.error('Error loading settings:', error)
+        // Fallback to all flags
+        this.selectedFlags = this.allFlags.map(flag => flag.name)
+        this.updateFlagsFromSelection()
+      }
+    },
+
+    // Save settings to localStorage
+    saveSettings() {
+      try {
+        localStorage.setItem('flagGame_selectedFlags', JSON.stringify(this.selectedFlags))
+        this.updateFlagsFromSelection()
+        this.closeSettings()
+        // Show a brief success message
+        this.showSaveSuccess = true
+        setTimeout(() => {
+          this.showSaveSuccess = false
+        }, 2000)
+      } catch (error) {
+        console.error('Error saving settings:', error)
+        alert('Failed to save settings. Please try again.')
+      }
+    },
+
+    // Update the flags array based on selected flags
+    updateFlagsFromSelection() {
+      this.flags = this.allFlags.filter(flag => this.selectedFlags.includes(flag.name))
+    },
+
+    // Toggle a flag's selection
+    toggleFlag(flagName) {
+      const index = this.selectedFlags.indexOf(flagName)
+      if (index > -1) {
+        this.selectedFlags.splice(index, 1)
+      } else {
+        this.selectedFlags.push(flagName)
+      }
+    },
+
+    // Select all flags
+    selectAllFlags() {
+      this.selectedFlags = this.allFlags.map(flag => flag.name)
+    },
+
+    // Deselect all flags
+    deselectAllFlags() {
+      this.selectedFlags = []
+    },
+
+    // Select popular flags (common countries)
+    selectPopularFlags() {
+      const popularCountries = [
+        'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 
+        'France', 'Italy', 'Spain', 'Japan', 'China', 'Brazil', 'Mexico',
+        'India', 'Russia', 'Netherlands', 'Sweden', 'Norway', 'Denmark',
+        'Switzerland', 'Austria', 'Belgium', 'Ireland', 'New Zealand'
+      ]
+      this.selectedFlags = this.allFlags
+        .filter(flag => popularCountries.includes(flag.name))
+        .map(flag => flag.name)
+    },
+
+    // Close settings modal
+    closeSettings() {
+      this.showSettings = false
+      // Reset to saved selection if not saved
+      this.loadSettings()
+    },
+
     // Create simple sound effects using Web Audio API
     createSoundUrl() {
       // For now, return empty string as we'll use programmatic sounds
@@ -199,6 +343,13 @@ export default {
     },
 
     generateQuestion() {
+      // Check if we have enough flags to play
+      if (this.flags.length < 2) {
+        alert('Please select at least 2 flags in settings to play the game!')
+        this.showSettings = true
+        return
+      }
+
       // Reset state
       this.selectedFlag = null
       this.showFeedback = false
@@ -208,10 +359,10 @@ export default {
       this.showHearts = false
       this.isProcessingAnswer = false
       
-      // Pick a random target flag
+      // Pick a random target flag from selected flags
       this.currentTarget = this.flags[Math.floor(Math.random() * this.flags.length)]
       
-      // Pick a random wrong flag
+      // Pick a random wrong flag from selected flags
       let wrongFlag
       do {
         wrongFlag = this.flags[Math.floor(Math.random() * this.flags.length)]
@@ -332,13 +483,254 @@ export default {
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
+.header-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 15px;
+}
+
 .score {
   font-size: 1.5rem;
   background: rgba(255,255,255,0.2);
   padding: 10px 20px;
   border-radius: 25px;
   display: inline-block;
-  margin-top: 10px;
+}
+
+.settings-btn {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.1);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Settings Modal Styles */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.settings-content {
+  background: white;
+  color: #333;
+  border-radius: 20px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: settingsPop 0.3s ease;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 2px solid #f0f0f0;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 20px 20px 0 0;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.close-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.1);
+}
+
+.settings-section {
+  padding: 30px;
+}
+
+.settings-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #667eea;
+}
+
+.settings-hint {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 1rem;
+}
+
+.flag-selection-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.select-all-btn, .deselect-all-btn, .popular-flags-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.deselect-all-btn {
+  background: #f44336;
+}
+
+.popular-flags-btn {
+  background: #2196F3;
+}
+
+.select-all-btn:hover, .deselect-all-btn:hover, .popular-flags-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.selected-count {
+  background: #f0f0f0;
+  padding: 10px 15px;
+  border-radius: 15px;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.flags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 2px solid #f0f0f0;
+  border-radius: 15px;
+}
+
+.flag-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.flag-checkbox:hover {
+  background: #f8f8f8;
+  border-color: #667eea;
+}
+
+.flag-checkbox.selected {
+  background: #e3f2fd;
+  border-color: #2196F3;
+}
+
+.flag-checkbox input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.2);
+}
+
+.flag-checkbox label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.flag-emoji-small {
+  font-size: 1.5rem;
+  margin-right: 10px;
+}
+
+.flag-name-small {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  padding: 20px 30px;
+  border-top: 2px solid #f0f0f0;
+}
+
+.save-btn, .cancel-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+.save-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.cancel-btn {
+  background: #f44336;
+  color: white;
+}
+
+.save-btn:hover, .cancel-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+@keyframes settingsPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .game-container {
@@ -828,6 +1220,19 @@ export default {
   .flag-emoji {
     font-size: 5rem;
   }
+
+  .settings-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+
+  .flags-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .flag-selection-controls {
+    flex-direction: column;
+  }
 }
 
 /* Raspberry Pi optimizations */
@@ -888,6 +1293,14 @@ export default {
   
   .celebration-content {
     min-height: 400px; /* Larger celebration area for easy touching */
+  }
+
+  .flag-checkbox {
+    padding: 15px; /* Larger touch targets for checkboxes */
+  }
+
+  .flag-checkbox input[type="checkbox"] {
+    transform: scale(1.5); /* Larger checkboxes for touch */
   }
 }
 </style> 
