@@ -4,9 +4,22 @@
       <h1>🏁 Flag Game! 🏁</h1>
       <div class="header-controls">
         <div class="score">Score: {{ score }}</div>
-        <button class="fullscreen-btn" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'">
-          {{ isFullscreen ? '🪟' : '⛶' }}
-        </button>
+              <button 
+        v-if="!isIOS" 
+        class="fullscreen-btn" 
+        @click="toggleFullscreen" 
+        :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+      >
+        {{ isFullscreen ? '🪟' : '⛶' }}
+      </button>
+      <button 
+        v-if="isIOS" 
+        class="fullscreen-btn ios-fullscreen" 
+        @click="showIOSFullscreenTip" 
+        title="Fullscreen Instructions for iOS"
+      >
+        📱
+      </button>
         <button class="settings-btn" @click="showSettings = true" title="Settings">
           ⚙️
         </button>
@@ -42,6 +55,28 @@
         </div>
         <div v-else class="incorrect">
           Try again! 💪
+        </div>
+      </div>
+    </div>
+
+    <!-- iOS Fullscreen Tip Modal -->
+    <div v-if="showIOSTip" class="ios-tip-modal" @click.self="closeIOSTip">
+      <div class="ios-tip-content">
+        <div class="ios-tip-header">
+          <h2>📱 iOS Fullscreen</h2>
+          <button class="close-btn" @click="closeIOSTip">✕</button>
+        </div>
+        <div class="ios-tip-body">
+          <p><strong>To go fullscreen on iOS Safari:</strong></p>
+          <ol>
+            <li>Tap the <strong>Share button</strong> <span class="share-icon">📤</span> at the bottom of Safari</li>
+            <li>Select <strong>"Add to Home Screen"</strong> 📲</li>
+            <li>Open the game from your Home Screen for a fullscreen experience!</li>
+          </ol>
+          <div class="ios-tip-alternative">
+            <p><strong>Alternative:</strong> Rotate your device to landscape mode for a better view! 🔄</p>
+          </div>
+          <button class="ios-tip-ok" @click="closeIOSTip">Got it! 👍</button>
         </div>
       </div>
     </div>
@@ -171,7 +206,9 @@ export default {
       correctSoundUrl: this.createSoundUrl(), // C, E, G chord
       wrongSoundUrl: this.createSoundUrl(), // Low descending tones
       celebrationSoundUrl: this.createSoundUrl(), // Victory fanfare
-      isFullscreen: false
+      isFullscreen: false,
+      isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+      showIOSTip: false
     }
   },
   computed: {
@@ -506,6 +543,14 @@ export default {
         document.mozFullScreenElement ||
         document.msFullscreenElement
       )
+    },
+
+    showIOSFullscreenTip() {
+      this.showIOSTip = true
+    },
+
+    closeIOSTip() {
+      this.showIOSTip = false
     }
   }
 }
@@ -595,6 +640,112 @@ export default {
   background: rgba(255,255,255,0.3);
   transform: scale(1.1);
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.ios-fullscreen {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* iOS Tip Modal Styles */
+.ios-tip-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.ios-tip-content {
+  background: white;
+  color: #333;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  animation: settingsPop 0.3s ease;
+}
+
+.ios-tip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 2px solid #f0f0f0;
+  background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+  color: white;
+  border-radius: 20px 20px 0 0;
+}
+
+.ios-tip-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.ios-tip-body {
+  padding: 30px;
+}
+
+.ios-tip-body p {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+}
+
+.ios-tip-body ol {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 20px 0;
+  padding-left: 20px;
+}
+
+.ios-tip-body li {
+  margin-bottom: 10px;
+}
+
+.share-icon {
+  font-size: 1.2rem;
+  background: #007AFF;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 3px;
+}
+
+.ios-tip-alternative {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+  border-left: 4px solid #28a745;
+}
+
+.ios-tip-alternative p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ios-tip-ok {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.ios-tip-ok:hover {
+  background: #218838;
+  transform: scale(1.02);
 }
 
 /* Settings Modal Styles */
