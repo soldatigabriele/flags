@@ -37,18 +37,11 @@
         </div>
       </div>
 
-      <!-- Next button -->
-      <button 
-        v-if="isCorrect && showFeedback" 
-        class="next-btn"
-        @click="nextQuestion"
-      >
-        Next Flag! 🚀
-      </button>
+
     </div>
 
     <!-- Enhanced celebration animation with more visual rewards -->
-    <div v-if="showCelebration" class="celebration">
+    <div v-if="showCelebration" class="celebration" @click="nextQuestion">
       <div class="celebration-content">
         <div class="trophy">🏆</div>
         <div class="rainbow-stars">
@@ -56,7 +49,11 @@
         </div>
         <h2>Amazing!</h2>
         <p>You got it right!</p>
+        <div class="celebration-animals">
+          <div class="animal" v-for="animal in celebrationAnimals" :key="animal">{{ animal }}</div>
+        </div>
         <div class="big-smiley">😄</div>
+        <p class="click-hint">🖱️ Click anywhere to continue! 🖱️</p>
         <div class="confetti">
           <div class="confetti-piece" v-for="n in 30" :key="n"></div>
         </div>
@@ -108,6 +105,8 @@ export default {
       score: 0,
       showStars: false,
       showHearts: false,
+      celebrationAnimals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸'],
+      isProcessingAnswer: false,
       // Simple sound URLs using Web Audio API tones
       correctSoundUrl: this.createSoundUrl(), // C, E, G chord
       wrongSoundUrl: this.createSoundUrl(), // Low descending tones
@@ -207,6 +206,7 @@ export default {
       this.shakeWrong = false
       this.showStars = false
       this.showHearts = false
+      this.isProcessingAnswer = false
       
       // Pick a random target flag
       this.currentTarget = this.flags[Math.floor(Math.random() * this.flags.length)]
@@ -229,11 +229,12 @@ export default {
     },
     
     selectFlag(index) {
-      if (this.showFeedback) return // Prevent multiple clicks
+      if (this.showFeedback || this.isProcessingAnswer) return // Prevent multiple clicks
       
       this.selectedFlag = index
       this.isCorrect = index === this.correctIndex
       this.showFeedback = true
+      this.isProcessingAnswer = true
       
       if (this.isCorrect) {
         this.score++
@@ -249,11 +250,17 @@ export default {
         
         // Show celebration after a short delay
         setTimeout(() => {
-          this.showCelebration = true
-          this.playSound('celebration')
-          setTimeout(() => {
-            this.showCelebration = false
-          }, 3000) // Longer celebration for toddlers
+          if (this.isProcessingAnswer) { // Only show if we're still processing
+            this.showCelebration = true
+            this.playSound('celebration')
+            
+            // Auto-hide celebration after 5 seconds as a fallback
+            setTimeout(() => {
+              if (this.showCelebration) {
+                this.nextQuestion()
+              }
+            }, 5000)
+          }
         }, 800)
       } else {
         // Play gentle "try again" sound
@@ -264,6 +271,7 @@ export default {
           this.shakeWrong = false
           this.showFeedback = false
           this.selectedFlag = null
+          this.isProcessingAnswer = false
         }, 1200) // Slightly longer for toddlers to process
       }
     },
@@ -277,6 +285,11 @@ export default {
     },
     
     nextQuestion() {
+      // Only proceed if we're actually showing the celebration
+      if (!this.showCelebration) return
+      
+      // Reset processing state
+      this.isProcessingAnswer = false
       this.generateQuestion()
     }
   }
@@ -561,6 +574,31 @@ export default {
   margin: 20px 0;
 }
 
+.celebration-animals {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+.animal {
+  font-size: 2.5rem;
+  animation: animalDance 1s ease-in-out infinite;
+  margin: 5px;
+}
+
+.animal:nth-child(2n) { animation-delay: 0.2s; }
+.animal:nth-child(3n) { animation-delay: 0.4s; }
+.animal:nth-child(4n) { animation-delay: 0.6s; }
+
+.click-hint {
+  font-size: 1.2rem;
+  color: #666;
+  margin: 15px 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
 .sparkles {
   position: absolute;
   top: 0;
@@ -694,6 +732,18 @@ export default {
     transform: scale(0.8);
     opacity: 0;
   }
+}
+
+@keyframes animalDance {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  50% { transform: scale(1.2) rotate(0deg); }
+  75% { transform: scale(1.1) rotate(5deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 @keyframes wiggle {
