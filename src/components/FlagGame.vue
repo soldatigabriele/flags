@@ -4,6 +4,9 @@
       <h1>🏁 Flag Game! 🏁</h1>
       <div class="header-controls">
         <div class="score">Score: {{ score }}</div>
+        <button class="fullscreen-btn" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'">
+          {{ isFullscreen ? '🪟' : '⛶' }}
+        </button>
         <button class="settings-btn" @click="showSettings = true" title="Settings">
           ⚙️
         </button>
@@ -167,7 +170,8 @@ export default {
       // Simple sound URLs using Web Audio API tones
       correctSoundUrl: this.createSoundUrl(), // C, E, G chord
       wrongSoundUrl: this.createSoundUrl(), // Low descending tones
-      celebrationSoundUrl: this.createSoundUrl() // Victory fanfare
+      celebrationSoundUrl: this.createSoundUrl(), // Victory fanfare
+      isFullscreen: false
     }
   },
   computed: {
@@ -178,6 +182,18 @@ export default {
   mounted() {
     this.loadSettings()
     this.generateQuestion()
+    // Listen for fullscreen changes
+    document.addEventListener('fullscreenchange', this.handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', this.handleFullscreenChange)
+    document.addEventListener('msfullscreenchange', this.handleFullscreenChange)
+  },
+  beforeUnmount() {
+    // Clean up fullscreen event listeners
+    document.removeEventListener('fullscreenchange', this.handleFullscreenChange)
+    document.removeEventListener('webkitfullscreenchange', this.handleFullscreenChange)
+    document.removeEventListener('mozfullscreenchange', this.handleFullscreenChange)
+    document.removeEventListener('msfullscreenchange', this.handleFullscreenChange)
   },
   methods: {
     // Load settings from localStorage
@@ -448,6 +464,48 @@ export default {
       // Reset processing state
       this.isProcessingAnswer = false
       this.generateQuestion()
+    },
+
+    toggleFullscreen() {
+      if (this.isFullscreen) {
+        this.exitFullscreen()
+      } else {
+        this.enterFullscreen()
+      }
+    },
+
+    enterFullscreen() {
+      const element = document.documentElement
+      if (element.requestFullscreen) {
+        element.requestFullscreen()
+      } else if (element.webkitRequestFullscreen) {
+        element.webkitRequestFullscreen()
+      } else if (element.mozRequestFullScreen) {
+        element.mozRequestFullScreen()
+      } else if (element.msRequestFullscreen) {
+        element.msRequestFullscreen()
+      }
+    },
+
+    exitFullscreen() {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen()
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen()
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen()
+      }
+    },
+
+    handleFullscreenChange() {
+      this.isFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      )
     }
   }
 }
@@ -497,6 +555,26 @@ export default {
   padding: 10px 20px;
   border-radius: 25px;
   display: inline-block;
+}
+
+.fullscreen-btn {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.1);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
 .settings-btn {
@@ -1272,6 +1350,12 @@ export default {
     padding: 8px 15px;
   }
 
+  .fullscreen-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
   .settings-btn {
     width: 40px;
     height: 40px;
@@ -1565,6 +1649,12 @@ export default {
 
   .flag-name {
     font-size: 1.1rem;
+  }
+
+  .fullscreen-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.3rem;
   }
 
   .settings-btn {
