@@ -739,11 +739,15 @@ export default {
 
 .question {
   margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .question h2 {
   font-size: 2rem;
   margin-bottom: 10px;
+  padding-right: 10px;
 }
 
 .target-country {
@@ -794,6 +798,13 @@ export default {
 .flag-option.selected {
   border-color: #4CAF50;
   background: rgba(255,255,255,1);
+}
+
+.flag-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .flag-emoji {
@@ -1235,6 +1246,237 @@ export default {
   }
 }
 
+/* Mobile Landscape Optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .flag-game {
+    padding: 10px;
+    min-height: 100vh;
+  }
+
+  .header {
+    margin-bottom: 15px;
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+  }
+
+  .header-controls {
+    gap: 15px;
+    margin-top: 10px;
+  }
+
+  .score {
+    font-size: 1.2rem;
+    padding: 8px 15px;
+  }
+
+  .settings-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .question {
+    margin-bottom: 20px;
+  }
+
+  .question h2 {
+    font-size: 1.4rem;
+    margin-bottom: 5px;
+  }
+
+  .target-country {
+    font-size: 1.8rem;
+    padding: 10px 20px;
+  }
+
+  .flags-container {
+    flex-direction: row;
+    gap: 20px;
+    margin-bottom: 20px;
+    justify-content: center;
+  }
+
+  .flag-option {
+    min-width: 180px;
+    min-height: 140px;
+    padding: 20px;
+    border-radius: 15px;
+  }
+
+  .flag-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .flag-emoji {
+    font-size: 3.5rem;
+    margin-bottom: 0;
+  }
+
+  .flag-name {
+    font-size: 1.2rem;
+    text-align: left;
+  }
+
+  .feedback {
+    margin: 15px 0;
+    font-size: 1.4rem;
+  }
+
+  /* Settings Modal for Mobile Landscape */
+  .settings-modal {
+    padding: 10px;
+  }
+
+  .settings-content {
+    max-height: 98vh;
+    max-width: 95vw;
+  }
+
+  .settings-header {
+    padding: 15px 20px;
+  }
+
+  .settings-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .close-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+
+  .settings-section {
+    padding: 20px;
+  }
+
+  .settings-section h3 {
+    font-size: 1.3rem;
+  }
+
+  .flag-selection-controls {
+    flex-direction: row;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .select-all-btn, .deselect-all-btn, .popular-flags-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 15px;
+  }
+
+  .selected-count {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .flags-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    max-height: 300px;
+    padding: 8px;
+  }
+
+  .flag-checkbox {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .flag-emoji-small {
+    font-size: 1.2rem;
+    margin-right: 8px;
+  }
+
+  .flag-name-small {
+    font-size: 0.8rem;
+  }
+
+  .flag-checkbox input[type="checkbox"] {
+    transform: scale(1.3);
+    margin-right: 8px;
+  }
+
+  .settings-actions {
+    padding: 15px 20px;
+    gap: 10px;
+  }
+
+  .save-btn, .cancel-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+  }
+
+  /* Celebration Modal for Mobile Landscape */
+  .celebration {
+    padding: 10px;
+  }
+
+  .celebration-content {
+    padding: 20px;
+    border-radius: 15px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .celebration h2 {
+    font-size: 1.8rem;
+    margin: 10px 0;
+  }
+
+  .celebration p {
+    font-size: 1.1rem;
+    margin: 8px 0;
+  }
+
+  .trophy {
+    font-size: 2.5rem;
+  }
+
+  .big-smiley {
+    font-size: 2.5rem;
+    margin: 10px 0;
+  }
+
+  .click-hint {
+    font-size: 0.9rem;
+    margin: 8px 0;
+  }
+
+  .celebration-animals {
+    margin: 10px 0;
+    gap: 6px;
+  }
+
+  .animal {
+    font-size: 1.8rem;
+  }
+
+  .rainbow-stars {
+    margin: 10px 0;
+  }
+
+  .star {
+    font-size: 1.3rem;
+    margin: 2px;
+  }
+
+  .confetti {
+    display: none; /* Hide confetti on mobile landscape for better performance */
+  }
+
+  .sparkles {
+    display: none; /* Hide sparkles on mobile landscape */
+  }
+}
+
 /* Raspberry Pi optimizations */
 @media (max-width: 1024px) and (orientation: landscape) {
   .flag-game {
@@ -1301,6 +1543,95 @@ export default {
 
   .flag-checkbox input[type="checkbox"] {
     transform: scale(1.5); /* Larger checkboxes for touch */
+  }
+}
+
+/* Enhanced Mobile Landscape Touch Optimizations */
+@media (max-width: 768px) and (orientation: landscape) and (pointer: coarse) {
+  .flag-option {
+    min-height: 120px;
+    padding: 20px;
+    /* Ensure minimum touch target size */
+    min-width: 220px;
+  }
+
+  .flag-content {
+    gap: 12px;
+  }
+
+  .flag-emoji {
+    font-size: 3.2rem;
+  }
+
+  .flag-name {
+    font-size: 1.1rem;
+  }
+
+  .settings-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.3rem;
+  }
+
+  .flag-checkbox {
+    padding: 12px;
+    min-height: 50px; /* Ensure minimum touch target */
+  }
+
+  .flag-checkbox input[type="checkbox"] {
+    transform: scale(1.4);
+  }
+
+  .select-all-btn, .deselect-all-btn, .popular-flags-btn {
+    min-height: 44px; /* iOS minimum touch target */
+    padding: 10px 15px;
+  }
+
+  .save-btn, .cancel-btn {
+    min-height: 44px;
+    padding: 12px 25px;
+  }
+
+  /* Improve scrolling in settings */
+  .flags-grid {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .flags-grid::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .flags-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .flags-grid::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .flags-grid::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* Optimize floating elements for mobile */
+  .floating-star {
+    font-size: 2.5rem;
+  }
+
+  .floating-heart {
+    font-size: 1.8rem;
+  }
+
+  /* Reduce animation complexity for better performance */
+  .sparkle {
+    display: none; /* Disable sparkles on mobile for better performance */
+  }
+
+  .confetti-piece:nth-child(n+10) {
+    display: none; /* Reduce confetti count */
   }
 }
 </style> 
