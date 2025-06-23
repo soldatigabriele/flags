@@ -20,6 +20,7 @@
           class="flag-option"
           :class="{ 'selected': selectedFlag === index, 'shake': shakeWrong && selectedFlag === index }"
           @click="selectFlag(index)"
+          @touchstart="onFlagTouch(index)"
           @mouseenter="onFlagHover"
         >
           <div class="flag-emoji">{{ flag.emoji }}</div>
@@ -41,7 +42,7 @@
     </div>
 
     <!-- Enhanced celebration animation with more visual rewards -->
-    <div v-if="showCelebration" class="celebration" @click="nextQuestion">
+    <div v-if="showCelebration" class="celebration" @click="nextQuestion" @touchstart="nextQuestion">
       <div class="celebration-content">
         <div class="trophy">🏆</div>
         <div class="rainbow-stars">
@@ -283,6 +284,16 @@ export default {
         this.showHearts = false
       }, 1000)
     },
+
+    // Touch event handler for better touch screen experience
+    onFlagTouch(index) {
+      // Prevent default touch behavior
+      event.preventDefault()
+      // Show hearts on touch
+      this.onFlagHover()
+      // Select flag
+      this.selectFlag(index)
+    },
     
     nextQuestion() {
       // Only proceed if we're actually showing the celebration
@@ -305,6 +316,14 @@ export default {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   color: white;
+  /* Touch screen optimizations */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .header {
@@ -362,12 +381,20 @@ export default {
 .flag-option {
   background: rgba(255,255,255,0.9);
   border-radius: 20px;
-  padding: 30px;
+  padding: 40px; /* Larger padding for touch */
   cursor: pointer;
   transition: all 0.3s ease;
   border: 4px solid transparent;
   color: #333;
-  min-width: 200px;
+  min-width: 250px; /* Larger minimum width for touch */
+  min-height: 200px; /* Minimum height for easy touching */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  /* Touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 215, 0, 0.3);
 }
 
 .flag-option:hover {
@@ -383,13 +410,14 @@ export default {
 }
 
 .flag-emoji {
-  font-size: 5rem;
+  font-size: 6rem; /* Larger for better visibility on Pi screen */
   margin-bottom: 15px;
 }
 
 .flag-name {
-  font-size: 1.5rem;
+  font-size: 1.8rem; /* Larger text for better readability */
   font-weight: bold;
+  text-align: center;
 }
 
 .feedback {
@@ -789,19 +817,82 @@ export default {
   .flags-container {
     flex-direction: column;
     align-items: center;
+    gap: 30px; /* Larger gap for touch screens */
   }
   
   .flag-option {
-    min-width: 250px;
+    min-width: 300px; /* Even larger for small touch screens */
+    min-height: 220px;
   }
   
   .target-country {
-    font-size: 2rem;
-    padding: 10px 20px;
+    font-size: 2.2rem;
+    padding: 15px 25px;
   }
   
   .flag-emoji {
-    font-size: 4rem;
+    font-size: 5rem;
+  }
+}
+
+/* Raspberry Pi optimizations */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .flag-game {
+    padding: 15px;
+  }
+  
+  .flags-container {
+    gap: 50px; /* Extra space between flags for easy touching */
+  }
+  
+  .flag-option {
+    min-width: 280px;
+    min-height: 200px;
+    padding: 35px;
+    /* Reduce animations for better Pi performance */
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .flag-option:hover,
+  .flag-option:active {
+    transform: scale(1.02); /* Smaller scale for better performance */
+  }
+  
+  /* Disable some heavy animations on Pi */
+  .sparkle,
+  .confetti-piece:nth-child(n+15) {
+    display: none; /* Reduce confetti count for better performance */
+  }
+  
+  /* Optimize celebration for Pi */
+  .celebration-content {
+    padding: 40px;
+    /* Reduce shadow effects for better performance */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  }
+}
+
+/* Touch-specific styles */
+@media (pointer: coarse) {
+  .flag-option {
+    min-height: 240px; /* Extra height for touch */
+    padding: 45px;
+  }
+  
+  .click-hint {
+    font-size: 1.5rem; /* Larger hint text for touch screens */
+    animation: none; /* Disable pulse on touch devices for performance */
+    color: #333;
+    font-weight: bold;
+  }
+  
+  /* Larger touch targets */
+  .celebration {
+    cursor: pointer;
+  }
+  
+  .celebration-content {
+    min-height: 400px; /* Larger celebration area for easy touching */
   }
 }
 </style> 
