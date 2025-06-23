@@ -24,7 +24,6 @@
           @mouseenter="onFlagHover"
         >
           <div class="flag-emoji">{{ flag.emoji }}</div>
-          <div class="flag-name">{{ flag.country }}</div>
         </div>
       </div>
 
