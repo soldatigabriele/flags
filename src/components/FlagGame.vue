@@ -248,20 +248,16 @@ export default {
           this.showStars = false
         }, 2000)
         
-        // Show celebration after a short delay
+        // Show celebration immediately
+        this.showCelebration = true
+        this.playSound('celebration')
+        
+        // Auto-hide celebration after 5 seconds as a fallback
         setTimeout(() => {
-          if (this.isProcessingAnswer) { // Only show if we're still processing
-            this.showCelebration = true
-            this.playSound('celebration')
-            
-            // Auto-hide celebration after 5 seconds as a fallback
-            setTimeout(() => {
-              if (this.showCelebration) {
-                this.nextQuestion()
-              }
-            }, 5000)
+          if (this.showCelebration) {
+            this.nextQuestion()
           }
-        }, 800)
+        }, 5000)
       } else {
         // Play gentle "try again" sound
         this.playSound('wrong')
