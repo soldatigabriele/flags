@@ -20,6 +20,7 @@
           class="flag-option"
           :class="{ 'selected': selectedFlag === index, 'shake': shakeWrong && selectedFlag === index }"
           @click="selectFlag(index)"
+          @mouseenter="onFlagHover"
         >
           <div class="flag-emoji">{{ flag.emoji }}</div>
           <div class="flag-name">{{ flag.country }}</div>
@@ -46,17 +47,45 @@
       </button>
     </div>
 
-    <!-- Celebration animation -->
+    <!-- Enhanced celebration animation with more visual rewards -->
     <div v-if="showCelebration" class="celebration">
       <div class="celebration-content">
         <div class="trophy">🏆</div>
+        <div class="rainbow-stars">
+          <div class="star" v-for="n in 12" :key="n">⭐</div>
+        </div>
         <h2>Amazing!</h2>
         <p>You got it right!</p>
+        <div class="big-smiley">😄</div>
         <div class="confetti">
-          <div class="confetti-piece" v-for="n in 20" :key="n"></div>
+          <div class="confetti-piece" v-for="n in 30" :key="n"></div>
+        </div>
+        <div class="sparkles">
+          <div class="sparkle" v-for="n in 15" :key="n">✨</div>
         </div>
       </div>
     </div>
+
+    <!-- Stars that appear on correct answer -->
+    <div v-if="showStars" class="floating-stars">
+      <div class="floating-star" v-for="n in 8" :key="n">⭐</div>
+    </div>
+
+    <!-- Hearts that appear on hover -->
+    <div v-if="showHearts" class="floating-hearts">
+      <div class="floating-heart" v-for="n in 6" :key="n">💖</div>
+    </div>
+
+    <!-- Sound effects (hidden audio elements) -->
+    <audio ref="correctSound" preload="auto">
+      <source :src="correctSoundUrl" type="audio/mpeg">
+    </audio>
+    <audio ref="wrongSound" preload="auto">
+      <source :src="wrongSoundUrl" type="audio/mpeg">
+    </audio>
+    <audio ref="celebrationSound" preload="auto">
+      <source :src="celebrationSoundUrl" type="audio/mpeg">
+    </audio>
   </div>
 </template>
 
@@ -76,19 +105,108 @@ export default {
       showFeedback: false,
       showCelebration: false,
       shakeWrong: false,
-      score: 0
+      score: 0,
+      showStars: false,
+      showHearts: false,
+      // Simple sound URLs using Web Audio API tones
+      correctSoundUrl: this.createSoundUrl(), // C, E, G chord
+      wrongSoundUrl: this.createSoundUrl(), // Low descending tones
+      celebrationSoundUrl: this.createSoundUrl() // Victory fanfare
     }
   },
   mounted() {
     this.generateQuestion()
   },
   methods: {
+    // Create simple sound effects using Web Audio API
+    createSoundUrl() {
+      // For now, return empty string as we'll use programmatic sounds
+      return ''
+    },
+
+    playSound(type) {
+      if (!window.AudioContext && !window.webkitAudioContext) return
+      
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      
+      if (type === 'correct') {
+        // Play a happy chord progression
+        this.playChord(audioContext, [523.25, 659.25, 783.99], 0.3)
+      } else if (type === 'wrong') {
+        // Play a gentle "try again" sound
+        this.playDescendingTone(audioContext, [300, 250, 200], 0.2)
+      } else if (type === 'celebration') {
+        // Play victory fanfare
+        this.playVictorySound(audioContext)
+      }
+    },
+
+    playChord(audioContext, frequencies, duration) {
+      frequencies.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime)
+        oscillator.type = 'sine'
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
+        
+        oscillator.start(audioContext.currentTime + index * 0.1)
+        oscillator.stop(audioContext.currentTime + duration + index * 0.1)
+      })
+    },
+
+    playDescendingTone(audioContext, frequencies, duration) {
+      frequencies.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.15)
+        oscillator.type = 'sine'
+        
+        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime + index * 0.15)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration + index * 0.15)
+        
+        oscillator.start(audioContext.currentTime + index * 0.15)
+        oscillator.stop(audioContext.currentTime + duration + index * 0.15)
+      })
+    },
+
+    playVictorySound(audioContext) {
+      const melody = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]
+      melody.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.2)
+        oscillator.type = 'sine'
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.2)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3 + index * 0.2)
+        
+        oscillator.start(audioContext.currentTime + index * 0.2)
+        oscillator.stop(audioContext.currentTime + 0.3 + index * 0.2)
+      })
+    },
+
     generateQuestion() {
       // Reset state
       this.selectedFlag = null
       this.showFeedback = false
       this.showCelebration = false
       this.shakeWrong = false
+      this.showStars = false
+      this.showHearts = false
       
       // Pick a random target flag
       this.currentTarget = this.flags[Math.floor(Math.random() * this.flags.length)]
@@ -119,20 +237,43 @@ export default {
       
       if (this.isCorrect) {
         this.score++
+        
+        // Play correct sound immediately
+        this.playSound('correct')
+        
+        // Show floating stars
+        this.showStars = true
+        setTimeout(() => {
+          this.showStars = false
+        }, 2000)
+        
+        // Show celebration after a short delay
         setTimeout(() => {
           this.showCelebration = true
+          this.playSound('celebration')
           setTimeout(() => {
             this.showCelebration = false
-          }, 2000)
-        }, 500)
+          }, 3000) // Longer celebration for toddlers
+        }, 800)
       } else {
+        // Play gentle "try again" sound
+        this.playSound('wrong')
+        
         this.shakeWrong = true
         setTimeout(() => {
           this.shakeWrong = false
           this.showFeedback = false
           this.selectedFlag = null
-        }, 1000)
+        }, 1200) // Slightly longer for toddlers to process
       }
+    },
+
+    // Add hover effects for more interactivity
+    onFlagHover() {
+      this.showHearts = true
+      setTimeout(() => {
+        this.showHearts = false
+      }, 1000)
     },
     
     nextQuestion() {
@@ -217,9 +358,10 @@ export default {
 }
 
 .flag-option:hover {
-  transform: translateY(-10px);
+  transform: translateY(-10px) scale(1.05);
   box-shadow: 0 10px 25px rgba(0,0,0,0.3);
   border-color: #FFD700;
+  animation: wiggle 0.5s ease-in-out;
 }
 
 .flag-option.selected {
@@ -393,6 +535,203 @@ export default {
     transform: translateY(100vh) rotate(360deg);
     opacity: 0;
   }
+}
+
+/* Enhanced visual rewards for toddlers */
+.rainbow-stars {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.star {
+  font-size: 2rem;
+  animation: rainbowSpin 1s ease-in-out infinite;
+  margin: 5px;
+}
+
+.star:nth-child(2n) { animation-delay: 0.1s; }
+.star:nth-child(3n) { animation-delay: 0.2s; }
+.star:nth-child(4n) { animation-delay: 0.3s; }
+
+.big-smiley {
+  font-size: 4rem;
+  animation: giggleBounce 0.5s ease-in-out infinite alternate;
+  margin: 20px 0;
+}
+
+.sparkles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  font-size: 1.5rem;
+  animation: sparkleFloat 2s ease-in-out infinite;
+}
+
+.sparkle:nth-child(odd) {
+  left: 20%;
+  animation-delay: 0.3s;
+}
+
+.sparkle:nth-child(even) {
+  right: 20%;
+  animation-delay: 0.6s;
+}
+
+.floating-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.floating-star {
+  position: absolute;
+  font-size: 3rem;
+  animation: floatUp 2s ease-out forwards;
+}
+
+.floating-star:nth-child(1) { left: 10%; animation-delay: 0s; }
+.floating-star:nth-child(2) { left: 20%; animation-delay: 0.2s; }
+.floating-star:nth-child(3) { left: 30%; animation-delay: 0.4s; }
+.floating-star:nth-child(4) { left: 40%; animation-delay: 0.6s; }
+.floating-star:nth-child(5) { left: 50%; animation-delay: 0.8s; }
+.floating-star:nth-child(6) { left: 60%; animation-delay: 1s; }
+.floating-star:nth-child(7) { left: 70%; animation-delay: 1.2s; }
+.floating-star:nth-child(8) { left: 80%; animation-delay: 1.4s; }
+
+.floating-hearts {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.floating-heart {
+  position: absolute;
+  font-size: 2rem;
+  animation: heartFloat 1s ease-out forwards;
+}
+
+.floating-heart:nth-child(1) { left: 15%; animation-delay: 0s; }
+.floating-heart:nth-child(2) { left: 30%; animation-delay: 0.1s; }
+.floating-heart:nth-child(3) { left: 45%; animation-delay: 0.2s; }
+.floating-heart:nth-child(4) { left: 60%; animation-delay: 0.3s; }
+.floating-heart:nth-child(5) { left: 75%; animation-delay: 0.4s; }
+.floating-heart:nth-child(6) { left: 85%; animation-delay: 0.5s; }
+
+@keyframes rainbowSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.2); }
+  50% { transform: rotate(180deg) scale(1); }
+  75% { transform: rotate(270deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes giggleBounce {
+  0% { transform: scale(1) rotate(-5deg); }
+  100% { transform: scale(1.1) rotate(5deg); }
+}
+
+@keyframes sparkleFloat {
+  0% {
+    transform: translateY(0) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-50px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    bottom: -10%;
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1) rotate(72deg);
+    opacity: 1;
+  }
+  100% {
+    bottom: 110%;
+    transform: scale(0.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes heartFloat {
+  0% {
+    bottom: 20%;
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    bottom: 80%;
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: translateY(-10px) scale(1.05) rotate(0deg); }
+  25% { transform: translateY(-10px) scale(1.05) rotate(-2deg); }
+  75% { transform: translateY(-10px) scale(1.05) rotate(2deg); }
+}
+
+/* Enhanced confetti with more colors and variety */
+.confetti-piece:nth-child(6n) {
+  background: #9C27B0;
+  animation-delay: 1s;
+  left: 10%;
+}
+
+.confetti-piece:nth-child(7n) {
+  background: #FF9800;
+  animation-delay: 1.2s;
+  left: 60%;
+}
+
+.confetti-piece:nth-child(8n) {
+  background: #E91E63;
+  animation-delay: 1.4s;
+  left: 40%;
+}
+
+/* Make celebration bigger and more exciting */
+.celebration-content {
+  background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+  color: #333;
+  padding: 60px;
+  border-radius: 30px;
+  text-align: center;
+  position: relative;
+  animation: celebrationPop 0.5s ease;
+  border: 5px solid #FF6B6B;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
 }
 
 /* Responsive design */
