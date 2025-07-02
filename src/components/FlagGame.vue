@@ -36,6 +36,9 @@
         >
           🔊
         </button>
+        <button class="reload-btn" @click="reloadPage" title="Reload Game">
+          🔄
+        </button>
         <button class="settings-btn" @click="showSettings = true" title="Settings">
           ⚙️
         </button>
@@ -249,7 +252,7 @@ export default {
       isStandalone: false,
       isLoadingNext: false,
       canDismissCelebration: false,
-      version: '1.0.2', // Version with iOS audio fix
+      version: '1.0.3', // Version with iOS audio fix
       // Audio context management for iOS compatibility
       audioContext: null,
       audioInitialized: false,
@@ -774,6 +777,11 @@ export default {
       // Clear the deferredPrompt
       this.deferredPrompt = null
       this.showInstallPrompt = false
+    },
+
+    reloadPage() {
+      // Reload the current page
+      window.location.reload()
     }
   }
 }
@@ -847,7 +855,8 @@ export default {
 
 .settings-btn,
 .install-btn,
-.sound-btn {
+.sound-btn,
+.reload-btn {
   background: rgba(255,255,255,0.2);
   border: 2px solid rgba(255,255,255,0.3);
   border-radius: 50%;
@@ -863,7 +872,8 @@ export default {
 
 .settings-btn:hover,
 .install-btn:hover,
-.sound-btn:hover {
+.sound-btn:hover,
+.reload-btn:hover {
   background: rgba(255,255,255,0.3);
   transform: scale(1.1);
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -1824,7 +1834,8 @@ export default {
   }
 
   .settings-btn,
-  .sound-btn {
+  .sound-btn,
+  .reload-btn {
     width: 40px;
     height: 40px;
     font-size: 1.2rem;
@@ -2137,7 +2148,8 @@ export default {
   }
 
   .settings-btn,
-  .sound-btn {
+  .sound-btn,
+  .reload-btn {
     width: 45px;
     height: 45px;
     font-size: 1.3rem;
