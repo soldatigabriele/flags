@@ -166,7 +166,8 @@
           <div class="animal" v-for="animal in celebrationAnimals" :key="animal">{{ animal }}</div>
         </div>
         <div class="big-smiley">😄</div>
-        <p class="click-hint">🖱️ Click anywhere to continue! 🖱️</p>
+        <p v-if="canDismissCelebration" class="click-hint">🖱️ Click anywhere to continue! 🖱️</p>
+        <p v-else class="click-hint waiting">⏳ Enjoy the celebration! ⏳</p>
         <div class="confetti">
           <div class="confetti-piece" v-for="n in 30" :key="n"></div>
         </div>
@@ -233,7 +234,8 @@ export default {
       deferredPrompt: null,
       showInstallPrompt: false,
       isStandalone: false,
-      isLoadingNext: false
+      isLoadingNext: false,
+      canDismissCelebration: false
     }
   },
   computed: {
@@ -440,6 +442,7 @@ export default {
       this.showStars = false
       this.showHearts = false
       this.isProcessingAnswer = false
+      this.canDismissCelebration = false
       
       // Pick a random target flag from selected flags
       this.currentTarget = this.flags[Math.floor(Math.random() * this.flags.length)]
@@ -483,14 +486,20 @@ export default {
         
         // Show celebration immediately
         this.showCelebration = true
+        this.canDismissCelebration = false
         this.playSound('celebration')
         
-        // Auto-hide celebration after 5 seconds as a fallback
+        // Allow dismissal after 2 seconds
+        setTimeout(() => {
+          this.canDismissCelebration = true
+        }, 2000)
+        
+        // Auto-hide celebration after 7 seconds as a fallback
         setTimeout(() => {
           if (this.showCelebration) {
             this.nextQuestion()
           }
-        }, 5000)
+        }, 7000)
       } else {
         // Play gentle "try again" sound
         this.playSound('wrong')
@@ -524,8 +533,8 @@ export default {
     },
     
     nextQuestion() {
-      // Only proceed if we're actually showing the celebration
-      if (!this.showCelebration || this.isLoadingNext) return
+      // Only proceed if we're actually showing the celebration and can dismiss it
+      if (!this.showCelebration || this.isLoadingNext || !this.canDismissCelebration) return
       
       // Set loading state to prevent double-clicks
       this.isLoadingNext = true
@@ -1353,6 +1362,12 @@ export default {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.click-hint.waiting {
+  color: #999;
+  animation: none;
+  font-style: italic;
+}
+
 .sparkles {
   position: absolute;
   top: 0;
@@ -1847,6 +1862,11 @@ export default {
     margin: 8px 0;
   }
 
+  .click-hint.waiting {
+    font-size: 1rem;
+    color: #aaa;
+  }
+
   .celebration-animals {
     margin: 10px 0;
     gap: 6px;
@@ -1923,6 +1943,12 @@ export default {
     animation: none; /* Disable pulse on touch devices for performance */
     color: #333;
     font-weight: bold;
+  }
+
+  .click-hint.waiting {
+    color: #666;
+    font-style: italic;
+    font-weight: normal;
   }
   
   /* Larger touch targets */
