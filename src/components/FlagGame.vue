@@ -28,6 +28,14 @@
       >
         📲
       </button>
+        <button 
+          v-if="isIOS && !audioInitialized && soundEnabled" 
+          class="sound-btn" 
+          @click="enableSound" 
+          title="Enable Sound"
+        >
+          🔊
+        </button>
         <button class="settings-btn" @click="showSettings = true" title="Settings">
           ⚙️
         </button>
@@ -238,10 +246,14 @@ export default {
       showIOSTip: false,
       deferredPrompt: null,
       showInstallPrompt: false,
-              isStandalone: false,
-        isLoadingNext: false,
-        canDismissCelebration: false,
-        version: '1.0.1' // Version with deployment tracking
+      isStandalone: false,
+      isLoadingNext: false,
+      canDismissCelebration: false,
+      version: '1.0.2', // Version with iOS audio fix
+      // Audio context management for iOS compatibility
+      audioContext: null,
+      audioInitialized: false,
+      soundEnabled: true
     }
   },
   computed: {
@@ -261,6 +273,9 @@ export default {
     // PWA installation handling
     this.checkIfStandalone()
     this.setupPWAInstallPrompt()
+    
+    // Initialize audio context for iOS compatibility
+    this.initializeAudio()
   },
   beforeUnmount() {
     // Clean up fullscreen event listeners
@@ -268,6 +283,15 @@ export default {
     document.removeEventListener('webkitfullscreenchange', this.handleFullscreenChange)
     document.removeEventListener('mozfullscreenchange', this.handleFullscreenChange)
     document.removeEventListener('msfullscreenchange', this.handleFullscreenChange)
+    
+    // Clean up audio context
+    if (this.audioContext) {
+      try {
+        this.audioContext.close()
+      } catch (error) {
+        console.warn('Failed to close audio context:', error)
+      }
+    }
   },
   methods: {
     // Load settings from localStorage
@@ -357,85 +381,166 @@ export default {
       return ''
     },
 
-    playSound(type) {
-      if (!window.AudioContext && !window.webkitAudioContext) return
-      
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      
-      if (type === 'correct') {
-        // Play a happy chord progression
-        this.playChord(audioContext, [523.25, 659.25, 783.99], 0.3)
-      } else if (type === 'wrong') {
-        // Play a gentle "try again" sound
-        this.playDescendingTone(audioContext, [300, 250, 200], 0.2)
-      } else if (type === 'celebration') {
-        // Play victory fanfare
-        this.playVictorySound(audioContext)
+    // Initialize audio context with iOS compatibility
+    initializeAudio() {
+      try {
+        // Check if Web Audio API is supported
+        if (!window.AudioContext && !window.webkitAudioContext) {
+          console.log('Web Audio API not supported')
+          this.soundEnabled = false
+          return
+        }
+
+        // Create audio context
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        
+        // On iOS, audio context starts in suspended state
+        if (this.audioContext.state === 'suspended') {
+          // Set up one-time user interaction handler to resume audio context
+          const resumeAudio = async () => {
+            try {
+              await this.audioContext.resume()
+              this.audioInitialized = true
+              console.log('Audio context resumed successfully')
+              // Remove the event listeners once audio is initialized
+              document.removeEventListener('touchstart', resumeAudio, { once: true })
+              document.removeEventListener('click', resumeAudio, { once: true })
+            } catch (error) {
+              console.warn('Failed to resume audio context:', error)
+              this.soundEnabled = false
+            }
+          }
+          
+          // Add listeners for first user interaction
+          document.addEventListener('touchstart', resumeAudio, { once: true })
+          document.addEventListener('click', resumeAudio, { once: true })
+        } else {
+          this.audioInitialized = true
+        }
+      } catch (error) {
+        console.warn('Failed to initialize audio:', error)
+        this.soundEnabled = false
       }
     },
 
-    playChord(audioContext, frequencies, duration) {
+    async playSound(type) {
+      // Check if sound is enabled and audio context is available
+      if (!this.soundEnabled || !this.audioContext) {
+        return
+      }
+
+      try {
+        // Ensure audio context is resumed (required for iOS)
+        if (this.audioContext.state === 'suspended') {
+          await this.audioContext.resume()
+        }
+
+        // Wait a moment for context to be ready
+        if (!this.audioInitialized && this.audioContext.state !== 'running') {
+          console.log('Audio context not ready yet')
+          return
+        }
+
+        switch (type) {
+          case 'correct':
+            // Play a happy chord progression
+            this.playChord([523.25, 659.25, 783.99], 0.3)
+            break
+          case 'wrong':
+            // Play a gentle "try again" sound
+            this.playDescendingTone([300, 250, 200], 0.2)
+            break
+          case 'celebration':
+            // Play victory fanfare
+            this.playVictorySound()
+            break
+        }
+      } catch (error) {
+        console.warn('Failed to play sound:', error)
+      }
+    },
+
+    playChord(frequencies, duration) {
+      if (!this.audioContext) return
+
       frequencies.forEach((freq, index) => {
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        
-        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime)
-        oscillator.type = 'sine'
-        
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
-        
-        oscillator.start(audioContext.currentTime + index * 0.1)
-        oscillator.stop(audioContext.currentTime + duration + index * 0.1)
+        try {
+          const oscillator = this.audioContext.createOscillator()
+          const gainNode = this.audioContext.createGain()
+          
+          oscillator.connect(gainNode)
+          gainNode.connect(this.audioContext.destination)
+          
+          oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime)
+          oscillator.type = 'sine'
+          
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration)
+          
+          oscillator.start(this.audioContext.currentTime + index * 0.1)
+          oscillator.stop(this.audioContext.currentTime + duration + index * 0.1)
+        } catch (error) {
+          console.warn('Failed to play chord tone:', error)
+        }
       })
     },
 
-    playDescendingTone(audioContext, frequencies, duration) {
+    playDescendingTone(frequencies, duration) {
+      if (!this.audioContext) return
+
       frequencies.forEach((freq, index) => {
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        
-        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.15)
-        oscillator.type = 'sine'
-        
-        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime + index * 0.15)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration + index * 0.15)
-        
-        oscillator.start(audioContext.currentTime + index * 0.15)
-        oscillator.stop(audioContext.currentTime + duration + index * 0.15)
+        try {
+          const oscillator = this.audioContext.createOscillator()
+          const gainNode = this.audioContext.createGain()
+          
+          oscillator.connect(gainNode)
+          gainNode.connect(this.audioContext.destination)
+          
+          oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime + index * 0.15)
+          oscillator.type = 'sine'
+          
+          gainNode.gain.setValueAtTime(0.05, this.audioContext.currentTime + index * 0.15)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration + index * 0.15)
+          
+          oscillator.start(this.audioContext.currentTime + index * 0.15)
+          oscillator.stop(this.audioContext.currentTime + duration + index * 0.15)
+        } catch (error) {
+          console.warn('Failed to play descending tone:', error)
+        }
       })
     },
 
-    playVictorySound(audioContext) {
+    playVictorySound() {
+      if (!this.audioContext) return
+
       const melody = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]
       melody.forEach((freq, index) => {
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        
-        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.2)
-        oscillator.type = 'sine'
-        
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.2)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3 + index * 0.2)
-        
-        oscillator.start(audioContext.currentTime + index * 0.2)
-        oscillator.stop(audioContext.currentTime + 0.3 + index * 0.2)
+        try {
+          const oscillator = this.audioContext.createOscillator()
+          const gainNode = this.audioContext.createGain()
+          
+          oscillator.connect(gainNode)
+          gainNode.connect(this.audioContext.destination)
+          
+          oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime + index * 0.2)
+          oscillator.type = 'sine'
+          
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime + index * 0.2)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3 + index * 0.2)
+          
+          oscillator.start(this.audioContext.currentTime + index * 0.2)
+          oscillator.stop(this.audioContext.currentTime + 0.3 + index * 0.2)
+        } catch (error) {
+          console.warn('Failed to play victory tone:', error)
+        }
       })
     },
 
     generateQuestion() {
       // Check if we have enough flags to play
       if (this.flags.length < 2) {
-        alert('Please select at least 2 flags in settings to play the game!')
+        console.warn('Not enough flags selected:', this.flags.length)
+        // Instead of alert, just show settings modal
         this.showSettings = true
         return
       }
@@ -607,6 +712,22 @@ export default {
       this.showIOSTip = false
     },
 
+    // Manual sound enablement for iOS
+    async enableSound() {
+      try {
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+          await this.audioContext.resume()
+          this.audioInitialized = true
+          console.log('Audio manually enabled')
+          // Play a test sound to confirm it works
+          this.playSound('correct')
+        }
+      } catch (error) {
+        console.warn('Failed to manually enable sound:', error)
+        this.soundEnabled = false
+      }
+    },
+
     // PWA installation methods
     checkIfStandalone() {
       this.isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
@@ -725,7 +846,8 @@ export default {
 }
 
 .settings-btn,
-.install-btn {
+.install-btn,
+.sound-btn {
   background: rgba(255,255,255,0.2);
   border: 2px solid rgba(255,255,255,0.3);
   border-radius: 50%;
@@ -740,7 +862,8 @@ export default {
 }
 
 .settings-btn:hover,
-.install-btn:hover {
+.install-btn:hover,
+.sound-btn:hover {
   background: rgba(255,255,255,0.3);
   transform: scale(1.1);
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -754,6 +877,16 @@ export default {
 
 .install-btn:hover {
   background: rgba(76, 175, 80, 0.5);
+}
+
+.sound-btn {
+  background: rgba(255, 193, 7, 0.3);
+  border-color: rgba(255, 193, 7, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.sound-btn:hover {
+  background: rgba(255, 193, 7, 0.5);
 }
 
 .ios-fullscreen {
@@ -1690,7 +1823,8 @@ export default {
     font-size: 1.2rem;
   }
 
-  .settings-btn {
+  .settings-btn,
+  .sound-btn {
     width: 40px;
     height: 40px;
     font-size: 1.2rem;
@@ -2002,7 +2136,8 @@ export default {
     font-size: 1.3rem;
   }
 
-  .settings-btn {
+  .settings-btn,
+  .sound-btn {
     width: 45px;
     height: 45px;
     font-size: 1.3rem;
