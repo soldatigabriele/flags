@@ -197,6 +197,11 @@
     <audio ref="celebrationSound" preload="auto">
       <source :src="celebrationSoundUrl" type="audio/mpeg">
     </audio>
+
+    <!-- Version Display -->
+    <div class="version-display">
+      v{{ version }}
+    </div>
   </div>
 </template>
 
@@ -233,9 +238,10 @@ export default {
       showIOSTip: false,
       deferredPrompt: null,
       showInstallPrompt: false,
-      isStandalone: false,
-      isLoadingNext: false,
-      canDismissCelebration: false
+              isStandalone: false,
+        isLoadingNext: false,
+        canDismissCelebration: false,
+        version: '1.0.1' // Version with deployment tracking
     }
   },
   computed: {
@@ -2061,6 +2067,33 @@ export default {
 
   .confetti-piece:nth-child(n+10) {
     display: none; /* Reduce confetti count */
+  }
+}
+
+/* Version Display */
+.version-display {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-family: monospace;
+  z-index: 10;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Hide version on small mobile screens to avoid clutter */
+@media (max-width: 480px) {
+  .version-display {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+    bottom: 5px;
+    right: 5px;
   }
 }
 </style> 
